@@ -335,11 +335,28 @@ void UAlsAnimationInstance::RefreshPose()
 void UAlsAnimationInstance::RefreshViewOnGameThread()
 {
 	check(IsInGameThread())
-
+	const auto World = GetWorld();
+	const auto ActorDeltaTime{IsValid(World) ? World->DeltaTimeSeconds * Character->CustomTimeDilation : 0.0f};
+	if (UNLIKELY(RotationMode.MatchesTag(AlsRotationModeTags::Aiming)))
+	{
+		const auto& Locomotion{Character->GetLocomotionState()};
+		ViewState.Rotation = Locomotion.Rotation;
+		ViewState.YawSpeed = ActorDeltaTime > UE_SMALL_NUMBER
+			   ? FRotator3f::NormalizeAxis(UE_REAL_TO_FLOAT(
+					 Locomotion.Rotation.Yaw - Locomotion.PreviousYawAngle)) / ActorDeltaTime
+			   : 0.0f;
+	}
+	else
+	{
+		const auto& View{Character->GetViewState()};
+		ViewState.Rotation = View.Rotation;
+		ViewState.YawSpeed = View.YawSpeed;
+	}
+/*
 	const auto& View{Character->GetViewState()};
 
 	ViewState.Rotation = View.Rotation;
-	ViewState.YawSpeed = View.YawSpeed;
+	ViewState.YawSpeed = View.YawSpeed;*/
 }
 
 void UAlsAnimationInstance::RefreshView(const float DeltaTime)
